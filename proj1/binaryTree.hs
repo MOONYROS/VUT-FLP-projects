@@ -1,4 +1,5 @@
 import Data.List (isPrefixOf)
+import Data.List.Split (splitOn)
 import System.Environment (getArgs)
 
 data Tree = Node Int Double Tree Tree
@@ -28,6 +29,15 @@ detectType line
 countIndent :: String -> Int
 countIndent = length . takeWhile (== ' ')
 
+parseNode :: String -> (Int, Double)
+parseNode line =
+    case splitOn ", " (drop 6 line) of
+        [idxStr, threshStr] -> (read idxStr, read threshStr)
+        _ -> error "Neplatny format uzlu"
+
+parseLeaf :: String -> String
+parseLeaf line = drop 6 line
+
 testTree :: Tree
 testTree = Node 0 5.5
   (Leaf "TridaA")
@@ -53,3 +63,6 @@ main = do
     -- print $ countIndent "Node: 0, 5.5"
     -- print $ countIndent "  Leaf: TridaA"
     -- print $ countIndent "    Leaf: TridaB"
+    -- TEST 4 - parsing
+    print $ parseNode "Node: 0, 5.5"
+    print $ parseLeaf "Leaf: TridaA"
