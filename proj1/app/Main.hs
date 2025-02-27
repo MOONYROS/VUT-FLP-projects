@@ -49,8 +49,17 @@ parseLine line
     where
         indent = countIndent line
 
+buildTree :: [TreeLine] -> (Tree, [TreeLine])
+buildTree (TreeNode indent (index, threshold) : rest) =
+    let (leftSubTree, rest1) = buildTree rest
+        (rightSubtree, rest2) = buildTree rest1
+    in (Node index threshold leftSubTree rightSubtree, rest2)
+buildTree (TreeLeaf indent label : rest) =
+    (Leaf label, rest)
+buildTree [] = error "Neocekavany konec souboru"
+
 main :: IO ()
 main = do
-    print $ parseLine "Node: 0, 5.5"
-    print $ parseLine "  Leaf: TridaA"
-    print $ parseLine "    Leaf: TridaB"
+    let treeLines = map parseLine [ "Node: 0, 5.5", "  Leaf: TridaA", "  Node: 1, 3.0", "    Leaf: TridaB", "    Leaf: TridaC"]
+    let (tree, _) = buildTree treeLines
+    print tree
