@@ -1,3 +1,5 @@
+module Main where
+
 import Data.List (isPrefixOf)
 import Data.List.Split (splitOn)
 import System.Environment (getArgs)
