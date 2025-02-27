@@ -2,6 +2,7 @@ module Main where
 
 import Data.List (isPrefixOf)
 import Data.List.Split (splitOn)
+import System.Environment (getArgs)
 
 data Tree = Node Int Double Tree Tree
     | Leaf String
@@ -49,14 +50,24 @@ parseLine line
     where
         indent = countIndent line
 
+-- vytvari korenovy uzel
 buildTree :: [TreeLine] -> (Tree, [TreeLine])
 buildTree (TreeNode indent (index, threshold) : rest) =
-    let (leftSubTree, rest1) = buildTree rest
-        (rightSubtree, rest2) = buildTree rest1
-    in (Node index threshold leftSubTree rightSubtree, rest2)
+    let (leftSubTree, rest1) = buildSubTree indent rest
+        (rightSubTree, rest2) = buildSubTree indent rest1
+    in (Node index threshold leftSubTree rightSubTree, rest2)
 buildTree (TreeLeaf indent label : rest) =
-    (Leaf label, rest)
+        (Leaf label, rest)
 buildTree [] = error "Neocekavany konec souboru"
+
+buildSubTree :: Int -> [TreeLine] -> (Tree, [TreeLine])
+buildSubTree parentIndent (x@(TreeNode indent _):xs)
+    | indent > parentIndent = buildTree (x:xs)
+    | otherwise = (Leaf "ERROR", x:xs)
+buildSubTree parentIndent (x@(TreeLeaf indent _):xs)
+    | indent > parentIndent = buildTree (x:xs)
+    | otherwise = (Leaf "ERROR", x:xs)
+buildSubTree _ [] = error "Neocekavany konec souboru"
 
 main :: IO ()
 main = do
