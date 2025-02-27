@@ -71,6 +71,11 @@ buildSubTree _ [] = error "Neocekavany konec souboru"
 
 main :: IO ()
 main = do
-    let treeLines = map parseLine [ "Node: 0, 5.5", "  Leaf: TridaA", "  Node: 1, 3.0", "    Leaf: TridaB", "    Leaf: TridaC"]
-    let (tree, _) = buildTree treeLines
-    print tree
+    args <- getArgs
+    case args of
+        ["-1", fileName] -> do
+            content <- loadFile fileName
+            let treeLines = map parseLine content
+            let (tree, _) = buildTree treeLines
+            print tree
+        _ -> putStrLn "Pouziti: flp-fun -1 <soubor obsahujici strom>"
