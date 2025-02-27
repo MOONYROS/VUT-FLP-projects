@@ -1,0 +1,6 @@
+1: Node 0 5.5 (Leaf "TridaA") (Node 1 3.0 (Leaf "TridaB") (Leaf "TridaC"))
+2: Leaf "TridaA"
+3: Node 0 5.5 (Leaf "Ano") (Leaf "Ne")
+4: Node 0 5.5 (Node 1 3.0 (Leaf "A") (Node 2 7.2 (Leaf "B") (Leaf "C"))) (Leaf "D")
+5: Neocekavana struktura stromu
+6: Node 0 10.0 (Node 1 5.0 (Leaf "A") (Leaf "B")) (Node 2 15.0 (Node 3 12.5 (Leaf "C") (Leaf "D")) (Node 4 17.5 (Leaf "E") (Leaf "F")))

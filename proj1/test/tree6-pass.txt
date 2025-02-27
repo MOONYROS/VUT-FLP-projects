@@ -1,0 +1,11 @@
+Node: 0, 10.0
+  Node: 1, 5.0
+    Leaf: A
+    Leaf: B
+  Node: 2, 15.0
+    Node: 3, 12.5
+      Leaf: C
+      Leaf: D
+    Node: 4, 17.5
+      Leaf: E
+      Leaf: F
