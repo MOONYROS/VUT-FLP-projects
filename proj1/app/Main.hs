@@ -25,6 +25,10 @@ loadFile path = do
 trimStart :: String -> String
 trimStart = dropWhile (== ' ')
 
+-- ===================================
+-- ========= TREE VALIDATION =========
+-- ===================================
+
 -- rozpoznani Node
 isNode :: String -> Bool
 isNode line = "Node:" `isPrefixOf` trimStart line
@@ -75,6 +79,22 @@ buildSubTree expectedIndent lines@(x:xs) =
             if indent == expectedIndent
                 then buildTree lines
                 else error "Nespravna indentace listu."
+
+-- =======================================
+-- ========= DATA CLASSIFICATION =========
+-- =======================================
+
+-- proparsuji vstupni radek, rozdelim podle carek a pomoci map read premapuji String na Double
+parseData :: String -> [Double]
+parseData line = map read (splitOn "," (trimStart line))
+
+classifyData :: Tree -> [Double] -> String
+classifyData (Leaf className) _ = className
+classifyData (Node index threshold leftTree rightTree) features = 
+    let feature = features !! index
+    in if feature < threshold
+        then classifyData leftTree features
+        else classifyData rightTree features
 
 main :: IO ()
 main = do
