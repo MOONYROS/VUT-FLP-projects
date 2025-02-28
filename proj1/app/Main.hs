@@ -12,6 +12,9 @@ data TreeLine = TreeNode Int (Int, Double)
     | TreeLeaf Int String
     deriving (Show)
 
+expectedIndentStep :: Int
+expectedIndentStep = 2
+
 -- funkce pro nacteni vstupniho souboru
 loadFile :: FilePath -> IO [String]
 loadFile path = do
@@ -53,21 +56,25 @@ parseLine line
 -- vytvari korenovy uzel
 buildTree :: [TreeLine] -> (Tree, [TreeLine])
 buildTree (TreeNode indent (index, threshold) : rest) =
-    let (leftSubTree, rest1) = buildSubTree indent rest
-        (rightSubTree, rest2) = buildSubTree indent rest1
+    let (leftSubTree, rest1) = buildSubTree (indent + expectedIndentStep) rest
+        (rightSubTree, rest2) = buildSubTree (indent + expectedIndentStep) rest1
     in (Node index threshold leftSubTree rightSubTree, rest2)
 buildTree (TreeLeaf indent label : rest) =
-        (Leaf label, rest)
+    (Leaf label, rest)
 buildTree [] = error "Neocekavany konec souboru"
 
 buildSubTree :: Int -> [TreeLine] -> (Tree, [TreeLine])
-buildSubTree parentIndent (x@(TreeNode indent _):xs)
-    | indent > parentIndent = buildTree (x:xs)
-    | otherwise = (Leaf "ERROR", x:xs)
-buildSubTree parentIndent (x@(TreeLeaf indent _):xs)
-    | indent > parentIndent = buildTree (x:xs)
-    | otherwise = (Leaf "ERROR", x:xs)
-buildSubTree _ [] = error "Neocekavany konec souboru"
+buildSubTree expectedIndent [] = error "Neocekavany konec souboru - chybi potomek uzlu."
+buildSubTree expectedIndent lines@(x:xs) =
+    case x of
+        TreeNode indent _ ->
+            if indent == expectedIndent
+                then buildTree lines
+                else error "Nespravna indentace uzlu."
+        TreeLeaf indent _ ->
+            if indent == expectedIndent
+                then buildTree lines
+                else error "Nespravna indentace listu."
 
 main :: IO ()
 main = do
@@ -76,6 +83,8 @@ main = do
         ["-1", fileName] -> do
             content <- loadFile fileName
             let treeLines = map parseLine content
-            let (tree, _) = buildTree treeLines
-            print tree
+            let (tree, remainingLines) = buildTree treeLines
+            if null remainingLines
+                then print tree
+                else error "Neplatna struktura stromu - prebyvajici radky."
         _ -> putStrLn "Pouziti: flp-fun -1 <soubor obsahujici strom>"
