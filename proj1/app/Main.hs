@@ -101,8 +101,8 @@ main = do
     args <- getArgs
     case args of
         ["-1", treeFile, dataFile] -> do
-            content <- loadFile treeFile
-            let treeLines = map parseLine content
+            treeContent <- loadFile treeFile
+            let treeLines = map parseLine treeContent
             let (tree, remainingLines) = buildTree treeLines
             if null remainingLines
                 then do
