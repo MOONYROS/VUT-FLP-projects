@@ -100,11 +100,24 @@ main :: IO ()
 main = do
     args <- getArgs
     case args of
-        ["-1", fileName] -> do
-            content <- loadFile fileName
+        ["-1", treeFile, dataFile] -> do
+            content <- loadFile treeFile
             let treeLines = map parseLine content
             let (tree, remainingLines) = buildTree treeLines
             if null remainingLines
-                then print tree
+                then do
+                    dataContent <- loadFile dataFile
+                    let parsedData = map parseData dataContent
+                    let results = map (classifyData tree) parsedData
+                    mapM_ putStrLn results
                 else error "Neplatna struktura stromu - prebyvajici radky."
-        _ -> putStrLn "Pouziti: flp-fun -1 <soubor obsahujici strom>"
+        ["-2", trainFile] -> do
+            putStrLn "TODO: Trenovani rozhodovaciho stromu."
+        _ -> putStrLn $ unlines
+            [ "\nPouziti programu flp-fun"
+            , "========================\n"
+            , "flp-fun -1 <soubor obsahujici strom> <soubor_obsahujici nove data>"
+            , "\t- Provede klasifikaci dat (soubor 2) na zaklade rozhodovaciho stromu (soubor 1).\n"
+            , "flp-fun -2 <soubor obsahujici trenovaci data>"
+            , "\t- Natrenuje rozhodovaci strom na zaklade trenovacich dat."
+            ]
