@@ -1,7 +1,9 @@
 module Main where
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, minimumBy, sort, group)
 import Data.List.Split (splitOn)
+import qualified Data.Map as Map
+import Data.Ord (comparing)
 import System.Environment (getArgs)
 
 data Tree = Node Int Double Tree Tree
@@ -25,9 +27,9 @@ loadFile path = do
 trimStart :: String -> String
 trimStart = dropWhile (== ' ')
 
--- ===================================
--- ========= TREE VALIDATION =========
--- ===================================
+-- =======================================
+-- =========== TREE VALIDATION ===========
+-- =======================================
 
 -- rozpoznani Node
 isNode :: String -> Bool
@@ -95,6 +97,33 @@ classifyData (Node index threshold leftTree rightTree) features =
     in if feature < threshold
         then classifyData leftTree features
         else classifyData rightTree features
+
+-- =======================================
+-- ============ TREE TRAINING ============
+-- =======================================
+
+parseTrainData :: String -> ([Double], String)
+parseTrainData line =
+    let parts = splitOn "," (trimStart line)
+        features = map read (init parts)
+        label = last parts
+    in (features, label)
+
+-- vypocet gini indexu
+calculateGini :: [String] -> Double
+calculateGini classes
+    -- pro 0 trid je gini index 0
+    | null classes = 0.0
+    -- pro vice trid spocitam podle vzorce 1 - sum(p_i)
+    | otherwise = 1.0 - sum [((fromIntegral count) / total) ^ 2 | count <- counts]
+    where
+        -- spocitam si cetnosti pro vsechny tridy
+        counts = map length $ group $ sort classes
+        total = fromIntegral $ length classes
+
+-- ======================================
+-- ================ MAIN ================
+-- ======================================
 
 main :: IO ()
 main = do
