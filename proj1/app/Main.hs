@@ -65,13 +65,13 @@ buildTree (TreeNode indent (index, threshold) : rest) =
     let (leftSubTree, rest1) = buildSubTree (indent + expectedIndentStep) rest
         (rightSubTree, rest2) = buildSubTree (indent + expectedIndentStep) rest1
     in (Node index threshold leftSubTree rightSubTree, rest2)
-buildTree (TreeLeaf indent label : rest) =
+buildTree (TreeLeaf _ label : rest) =
     (Leaf label, rest)
 buildTree [] = error "Neocekavany konec souboru"
 
 buildSubTree :: Int -> [TreeLine] -> (Tree, [TreeLine])
-buildSubTree expectedIndent [] = error "Neocekavany konec souboru - chybi potomek uzlu."
-buildSubTree expectedIndent treeLines@(x:xs) =
+buildSubTree _ [] = error "Neocekavany konec souboru - chybi potomek uzlu."
+buildSubTree expectedIndent treeLines@(x:_) =
     case x of
         TreeNode indent _ ->
             if indent == expectedIndent
@@ -131,9 +131,6 @@ findBestSplit dataset
     -- vybeteme rozdeleni s nejmensim skore
     | otherwise = minimumBy (comparing (\(_, _, score) -> score)) allSplits
     where
-        -- seznam vsech trid v datasetu
-        labels = map snd dataset
-
         -- pocet priznaku - bereme z prvniho prvku a u zbytku predpokladame stejny pocet
         numFeatures = length (fst (head dataset))
         
@@ -217,7 +214,7 @@ treeToOutput tree = treeToOutputHelper tree 0 0
     where
         treeToOutputHelper :: Tree -> Int -> Int -> [String]
         treeToOutputHelper (Leaf label) _ _ = ["Leaf: " ++ label] -- pro list proste vypiseme tridu
-        treeToOutputHelper (Node featureIdx threshold left right) depth nodeId =
+        treeToOutputHelper (Node _ threshold left right) depth nodeId =
             ["Node: " ++ show nodeId ++ ", " ++ show threshold] ++ -- vypiseme informace o uzlu
             map (" " ++) (treeToOutputHelper left (depth + 1) (2 * nodeId + 1)) ++ -- levy podstrom s odsazenim
             map (" " ++) (treeToOutputHelper right (depth + 1) (2 * nodeId + 2)) -- pravy podstrom s odsazenim
