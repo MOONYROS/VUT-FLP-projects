@@ -121,6 +121,28 @@ calculateGini classes
         counts = map length $ group $ sort classes -- spocitani velikosti skupin
         total = fromIntegral $ length classes -- celkovy pocet prvku
 
+-- funkce pro vypocet skore rozdeleni - nizsi znamena lepsi
+calculateSplitScore :: [([Double], String)] -> Int -> Double -> Double
+calculateSplitScore dataset featureIndex threshold =
+    let
+        -- rozdelim dataset na levou a pravou cast podle prahu
+        left = [(features, label) | (features, label) <- dataset, features !! featureIndex <= threshold]
+        right = [(features, label) | (features, label) <- dataset, features !! featureIndex > threshold]
+        
+        -- spocitam velikosti obou casti (stran)
+        nLeft = length left
+        nRight = length right
+        n = fromIntegral (nLeft + nRight)
+        
+        -- vypocitam vazeny gini index - vahy odpovidaji velikosti kazde casti
+        weightedGini =
+            if n == 0
+                then 1.0 -- pokud je dataset prazdny, vratime nejhorsi skore
+                else (fromIntegral nLeft / n) * calculateGini (map snd left) + 
+                    (fromIntegral nRight / n) * calculateGini (map snd right)
+    in
+        weightedGini
+
 -- nalezeni nejlepsiho rozdeleni datasetu, vraci (index priznaku, prahovou hodnotu, skore rozdeleni)
 findBestSplit :: [([Double], String)] -> (Int, Double, Double)
 findBestSplit dataset
@@ -155,27 +177,11 @@ findBestSplit dataset
                 [(featureIndex, threshold, calculateSplitScore inputData featureIndex threshold) |
                     (threshold, _) <- thresholds]
 
--- funkce pro vypocet skore rozdeleni - nizsi znamena lepsi
-calculateSplitScore :: [([Double], String)] -> Int -> Double -> Double
-calculateSplitScore dataset featureIndex threshold =
-    let
-        -- rozdelim dataset na levou a pravou cast podle prahu
-        left = [(features, label) | (features, label) <- dataset, features !! featureIndex <= threshold]
-        right = [(features, label) | (features, label) <- dataset, features !! featureIndex > threshold]
-        
-        -- spocitam velikosti obou casti (stran)
-        nLeft = length left
-        nRight = length right
-        n = fromIntegral (nLeft + nRight)
-        
-        -- vypocitam vazeny gini index - vahy odpovidaji velikosti kazde casti
-        weightedGini =
-            if n == 0
-                then 1.0 -- pokud je dataset prazdny, vratime nejhorsi skore
-                else (fromIntegral nLeft / n) * calculateGini (map snd left) + 
-                    (fromIntegral nRight / n) * calculateGini (map snd right)
-    in
-        weightedGini
+-- funkce pro urceni nejcastejsi tridy v datasetu - pro vytvoreni listu, kdyz nechceme dale delit
+mostCommonLabel :: [([Double], String)] -> String
+mostCommonLabel dataset =
+    -- vytvorim mapu cetnosti trid a vyberu tridu s nejvyssi cetnosti
+    fst $ maximumBy (comparing snd) $ Map.toList $ Map.fromListWith (+) [(label, 1 :: Int) | (_, label) <- dataset]
 
 -- hlavni funkce pro vybudovani rozhodovaciho stromu
 -- maxDepth = maximalni hloubka stromu
@@ -202,11 +208,6 @@ buildCartTree dataset maxDepth minSamples currentDepth
         leftDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex <= threshold]
         rightDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex > threshold]
 
--- funkce pro urceni nejcastejsi tridy v datasetu - pro vytvoreni listu, kdyz nechceme dale delit
-mostCommonLabel :: [([Double], String)] -> String
-mostCommonLabel dataset =
-    -- vytvorim mapu cetnosti trid a vyberu tridu s nejvyssi cetnosti
-    fst $ maximumBy (comparing snd) $ Map.toList $ Map.fromListWith (+) [(label, 1 :: Int) | (_, label) <- dataset]
 
 -- funkce pro prevod stromu na vystupni format
 treeToOutput :: Tree -> [String]
