@@ -123,6 +123,19 @@ calculateGini classes
 
 -- TODO: Udelat trenovani stromu a vyuzit Gini index
 
+-- zatim nemam currentDepth, minSamples, ani maxDepth
+trainTree :: [([Double], String)] -> Tree
+trainTree dataset
+    | null dataset = error "Empty dataset!"
+    -- TODO: osetrit a overit podminky
+    | otherwise = Node featureIndex threshold (trainTree leftDataset) (trainTree rightDataset)
+    where
+        (featureIndex, threshold, _) = findBestSplit dataset
+        -- TODO: overit spravnost <, >=
+        leftDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
+        rightDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
+
+
 -- funkce pro prevod stromu na vystupni format
 treeToOutput :: Tree -> [String]
 treeToOutput tree = treeToOutputHelper tree 0 0
