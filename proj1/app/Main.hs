@@ -1,8 +1,7 @@
 module Main where
 
-import Data.List (isPrefixOf, minimumBy, maximumBy, sort, group)
+import Data.List (isPrefixOf, minimumBy, sort, group)
 import Data.List.Split (splitOn)
-import qualified Data.Map as Map
 import Data.Ord (comparing)
 import System.Environment (getArgs)
 
@@ -121,9 +120,57 @@ calculateGini classes
         counts = map length $ group $ sort classes -- spocitani velikosti skupin
         total = fromIntegral $ length classes -- celkovy pocet prvku
 
--- TODO: Udelat trenovani stromu a vyuzit Gini index
+-- funkce pro vypocet skore pomoci gini indexu
+calculateScore :: [([Double], String)] -> Int -> Double -> Double
+calculateScore dataset featureIndex threshold =
+    let
+        -- rozdelim si dataset na dve poloviny podle thresholdu
+        -- TODO: zkontrolovat mensi/vetsi/rovno
+        left = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
+        right = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
+
+        numLeft = length left
+        numRight = length right
+        numComb = fromIntegral (numLeft + numRight)
+
+        weightedGini =
+            if numComb == 0 then -- pokud je dataset prazdny
+                1.0 -- vratime nejhorsi skore
+            else -- jinak vypocitame gini index
+                (fromIntegral numLeft / numComb) * calculateGini (map snd left) +
+                (fromIntegral numRight / numComb) * calculateGini (map snd right)
+    in
+        weightedGini
+
 findBestSplit :: [([Double], String)] -> (Int, Double, Double)
-findBestSplit = error "Function under construction."
+findBestSplit dataset
+    | null dataset = error "Empty dataset!" -- ZBYTECNE?
+    | length (group (sort (map snd dataset))) == 1 = error "Redundant split!" -- ZBYTECNE?
+    | otherwise = minimumBy (comparing (\(_, _, gini) -> gini)) allSplits -- ze vsech splitu se vybere ten nejmensi
+    where
+        numFeatures = length (fst (head dataset)) -- pocet priznaku prvniho prvku, potom predpokladame stejne
+        allSplits = concat [findSplits dataset featureIndex | featureIndex <- [0..(numFeatures-1)]]
+
+        -- (dataset, index_priznaku) -> [(feature_index, threshold, score)]
+        -- najde a vypocita vsechny splity
+        findSplits :: [([Double], String)] -> Int -> [(Int, Double, Double)]
+        findSplits inputData featureIndex =
+            let
+                featureValues = [(features !! featureIndex, features, label) | (features, label) <- inputData] -- vezmu vsechny trojice (ID, [feature], label)
+                sortedByFeature = sort featureValues -- a seradim
+
+                -- vypocitam se mozne prahy
+                -- vnitrni zip sjednoti sousedni vrcholy s podminkou, ze nebudou stejne
+                -- vnejsi zip potom kazdemu paru vrcholu priradi index
+                -- format: [(index, (vrchol1, vrchol2))]
+                thresholds = [((v1 + v2) / 2, i)| 
+                    (i, ((v1, _, _), (v2, _, _))) <- zip [0 :: Int ..] (zip sortedByFeature (tail sortedByFeature)),
+                    v1 /= v2]
+            in
+                -- pro kazdy prah vypocitam skore a vratim trojici (index priznaku, prah, skore)
+                [(featureIndex, threshold, calculateScore inputData featureIndex threshold) |
+                    (threshold, _) <- thresholds] -- vezmeme si pouze hodnotu thresholdu
+
 
 -- zatim nemam currentDepth, minSamples, ani maxDepth
 trainTree :: [([Double], String)] -> Tree
@@ -180,7 +227,7 @@ main = do
             trainContent <- loadFile trainFile
             let trainData = map parseTrainData trainContent
             -- max depth: 5, min samples: 2, start depth 0
-            let tree = buildCartTree trainData 5 2 0
+            let tree = trainTree trainData
             -- prevod stromu na vystupni format
             let output = treeToOutput tree
             mapM_ putStrLn output
