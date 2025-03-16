@@ -122,15 +122,23 @@ calculateGini classes
         total = fromIntegral $ length classes -- celkovy pocet prvku
 
 -- TODO: Udelat trenovani stromu a vyuzit Gini index
+findBestSplit :: [([Double], String)] -> (Int, Double, Double)
+findBestSplit = error "Function under construction."
 
 -- zatim nemam currentDepth, minSamples, ani maxDepth
 trainTree :: [([Double], String)] -> Tree
 trainTree dataset
     | null dataset = error "Empty dataset!"
     -- TODO: osetrit a overit podminky
-    | otherwise = Node featureIndex threshold (trainTree leftDataset) (trainTree rightDataset)
+    | length (group (sort labels)) == 1 = Leaf (head labels) -- data jsou v jedne tride => Leaf
+    | otherwise = Node featureIndex threshold (trainTree leftDataset) (trainTree rightDataset) -- data nemaji stejnou tridu => Node
     where
+        -- seznam trid
+        labels = map snd dataset
+
+        -- najdeme nejlepsi rozdeleni
         (featureIndex, threshold, _) = findBestSplit dataset
+        
         -- TODO: overit spravnost <, >=
         leftDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
         rightDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
