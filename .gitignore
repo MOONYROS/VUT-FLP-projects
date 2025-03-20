@@ -1,5 +1,8 @@
 flp-fun
+.DS_Store
+
 examples/
+public/
 
 dist
 dist-*
