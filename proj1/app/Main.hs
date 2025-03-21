@@ -196,11 +196,16 @@ treeToOutput :: Tree -> [String]
 treeToOutput tree = treeToOutputHelper tree 0 0
     where
         treeToOutputHelper :: Tree -> Int -> Int -> [String]
-        treeToOutputHelper (Leaf label) _ _ = ["Leaf: " ++ label] -- pro list proste vypiseme tridu
+        treeToOutputHelper (Leaf label) depth _ =
+            [indent ++ "Leaf: " ++ label]
+            where 
+                indent = replicate (depth * expectedIndentStep) ' '
         treeToOutputHelper (Node _ threshold left right) depth nodeId =
-            ["Node: " ++ show nodeId ++ ", " ++ show threshold] ++ -- vypiseme informace o uzlu
-            map (" " ++) (treeToOutputHelper left (depth + 1) (2 * nodeId + 1)) ++ -- levy podstrom s odsazenim
-            map (" " ++) (treeToOutputHelper right (depth + 1) (2 * nodeId + 2)) -- pravy podstrom s odsazenim
+            [indent ++ "Node: " ++ show nodeId ++ ", " ++ show threshold]
+                ++ treeToOutputHelper left (depth + 1) (2 * nodeId + 1)
+                ++ treeToOutputHelper right (depth + 1) (2 * nodeId + 2)
+            where
+                indent = replicate (depth * expectedIndentStep) ' '
 
 
 
