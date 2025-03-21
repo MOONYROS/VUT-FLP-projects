@@ -193,17 +193,17 @@ trainTree dataset
 
 -- funkce pro prevod stromu na vystupni format
 treeToOutput :: Tree -> [String]
-treeToOutput tree = treeToOutputHelper tree 0 0
+treeToOutput tree = treeToOutputHelper tree 0
     where
-        treeToOutputHelper :: Tree -> Int -> Int -> [String]
-        treeToOutputHelper (Leaf label) depth _ =
+        treeToOutputHelper :: Tree -> Int -> [String]
+        treeToOutputHelper (Leaf label) depth =
             [indent ++ "Leaf: " ++ label]
             where 
                 indent = replicate (depth * expectedIndentStep) ' '
-        treeToOutputHelper (Node _ threshold left right) depth nodeId =
-            [indent ++ "Node: " ++ show nodeId ++ ", " ++ show threshold]
-                ++ treeToOutputHelper left (depth + 1) (2 * nodeId + 1)
-                ++ treeToOutputHelper right (depth + 1) (2 * nodeId + 2)
+        treeToOutputHelper (Node featureIndex threshold left right) depth =
+            [indent ++ "Node: " ++ show featureIndex ++ ", " ++ show threshold]
+                ++ treeToOutputHelper left (depth + 1)
+                ++ treeToOutputHelper right (depth + 1)
             where
                 indent = replicate (depth * expectedIndentStep) ' '
 
