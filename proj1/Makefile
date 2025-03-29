@@ -1,7 +1,7 @@
 GHC = ghc
 SRC = Main.hs
 TARGET = flp-fun
-FLAGS = -Wall -O2
+FLAGS = -Wall
 
 all: $(TARGET)
 
