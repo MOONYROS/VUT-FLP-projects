@@ -1,10 +1,17 @@
-EXECUTABLE = flp-fun
+GHC = ghc
+SRC = Main.hs
+TARGET = flp-fun
+FLAGS = -Wall -O2
 
-all: build
+all: $(TARGET)
 
-build:
-	cabal install --install-method=copy --installdir=. --overwrite-policy=always
+$(TARGET): $(SRC)
+	$(GHC) $(FLAGS) -o $(TARGET) $(SRC)
 
 clean:
-	rm -f $(EXECUTABLE)
-	cabal clean
+	rm -f $(TARGET) *.hi *.o
+
+run: $(TARGET)
+	./$(TARGET)
+
+.PHONY: all clean run
