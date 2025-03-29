@@ -61,11 +61,12 @@ parseLine line
 -- vytvari korenovy uzel
 buildTree :: [TreeLine] -> (Tree, [TreeLine])
 buildTree (TreeNode indent (index, threshold) : rest) =
-    let (leftSubTree, rest1) = buildSubTree (indent + expectedIndentStep) rest
+    let 
+        (leftSubTree, rest1) = buildSubTree (indent + expectedIndentStep) rest
         (rightSubTree, rest2) = buildSubTree (indent + expectedIndentStep) rest1
-    in (Node index threshold leftSubTree rightSubTree, rest2)
-buildTree (TreeLeaf _ label : rest) =
-    (Leaf label, rest)
+    in 
+        (Node index threshold leftSubTree rightSubTree, rest2)
+buildTree (TreeLeaf _ label : rest) = (Leaf label, rest)
 buildTree [] = error "Neocekavany konec souboru"
 
 buildSubTree :: Int -> [TreeLine] -> (Tree, [TreeLine])
@@ -73,13 +74,13 @@ buildSubTree _ [] = error "Neocekavany konec souboru - chybi potomek uzlu."
 buildSubTree expectedIndent treeLines@(x:_) =
     case x of
         TreeNode indent _ ->
-            if indent == expectedIndent
-                then buildTree treeLines
-                else error "Nespravna indentace uzlu."
+            if indent == expectedIndent then
+                buildTree treeLines
+            else error "Nespravna indentace uzlu."
         TreeLeaf indent _ ->
-            if indent == expectedIndent
-                then buildTree treeLines
-                else error "Nespravna indentace listu."
+            if indent == expectedIndent then
+                buildTree treeLines
+            else error "Nespravna indentace listu."
 
 -- =======================================
 -- ========= DATA CLASSIFICATION =========
@@ -92,9 +93,11 @@ parseData line = map read (splitOn "," (trimStart line))
 classifyData :: Tree -> [Double] -> String
 classifyData (Leaf className) _ = className
 classifyData (Node index threshold leftTree rightTree) features = 
-    let feature = features !! index
-    in if feature < threshold
-        then classifyData leftTree features
+    let 
+        feature = features !! index
+    in 
+        if feature < threshold then
+            classifyData leftTree features
         else classifyData rightTree features
 
 -- =======================================
@@ -103,10 +106,12 @@ classifyData (Node index threshold leftTree rightTree) features =
 
 parseTrainData :: String -> ([Double], String)
 parseTrainData line =
-    let parts = splitOn "," (trimStart line)
+    let 
+        parts = splitOn "," (trimStart line)
         features = map read (init parts)
         label = last parts
-    in (features, label)
+    in 
+        (features, label)
 
 -- vypocet gini indexu
 calculateGini :: [String] -> Double
@@ -213,6 +218,16 @@ treeToOutput tree = treeToOutputHelper tree 0
 -- ================ MAIN ================
 -- ======================================
 
+showHelp :: IO ()
+showHelp = putStrLn $ unlines
+    [ "\nPouziti programu flp-fun"
+    , "========================\n"
+    , "flp-fun -1 <soubor obsahujici strom> <soubor_obsahujici nove data>"
+    , "\t- Provede klasifikaci dat (soubor 2) na zaklade rozhodovaciho stromu (soubor 1).\n"
+    , "flp-fun -2 <soubor obsahujici trenovaci data>"
+    , "\t- Natrenuje rozhodovaci strom na zaklade trenovacich dat."
+    ]
+
 main :: IO ()
 main = do
     args <- getArgs
@@ -221,13 +236,13 @@ main = do
             treeContent <- loadFile treeFile
             let treeLines = map parseLine treeContent
             let (tree, remainingLines) = buildTree treeLines
-            if null remainingLines
-                then do
+            if null remainingLines then
+                do
                     dataContent <- loadFile dataFile
                     let parsedData = map parseData dataContent
                     let results = map (classifyData tree) parsedData
                     mapM_ putStrLn results
-                else error "Neplatna struktura stromu - prebyvajici radky."
+            else error "Neplatna struktura stromu - prebyvajici radky."
         ["-2", trainFile] -> do
             trainContent <- loadFile trainFile
             let trainData = map parseTrainData trainContent
@@ -236,11 +251,6 @@ main = do
             -- prevod stromu na vystupni format
             let output = treeToOutput tree
             mapM_ putStrLn output
-        _ -> putStrLn $ unlines
-            [ "\nPouziti programu flp-fun"
-            , "========================\n"
-            , "flp-fun -1 <soubor obsahujici strom> <soubor_obsahujici nove data>"
-            , "\t- Provede klasifikaci dat (soubor 2) na zaklade rozhodovaciho stromu (soubor 1).\n"
-            , "flp-fun -2 <soubor obsahujici trenovaci data>"
-            , "\t- Natrenuje rozhodovaci strom na zaklade trenovacich dat."
-            ]
+        ["-h"] -> showHelp
+        ["--help"] -> showHelp
+        _ -> putStrLn "Nepravny vstup. Pro zobrazeni napovedy pouzijte 'flp-fun -h' nebo 'flp-fun --help'."
