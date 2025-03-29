@@ -175,8 +175,6 @@ findBestSplit dataset
                 [(featureIndex, threshold, calculateScore inputData featureIndex threshold) |
                     (threshold, _) <- thresholds] -- vezmeme si pouze hodnotu thresholdu
 
-
--- zatim nemam currentDepth, minSamples, ani maxDepth
 trainTree :: [([Double], String)] -> Tree
 trainTree dataset
     | null dataset = error "Empty dataset!"
@@ -191,7 +189,6 @@ trainTree dataset
         
         leftDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
         rightDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
-
 
 -- funkce pro prevod stromu na vystupni format
 treeToOutput :: Tree -> [String]
@@ -208,7 +205,6 @@ treeToOutput tree = treeToOutputHelper tree 0
                 ++ treeToOutputHelper right (depth + 1)
             where
                 indent = replicate (depth * expectedIndentStep) ' '
-
 
 
 -- ======================================
@@ -243,9 +239,7 @@ main = do
         ["-2", trainFile] -> do
             trainContent <- loadFile trainFile
             let trainData = map parseTrainData trainContent
-            -- max depth: 5, min samples: 2, start depth 0
             let tree = trainTree trainData
-            -- prevod stromu na vystupni format
             let output = treeToOutput tree
             mapM_ putStrLn output
         ["-h"] -> showHelp
