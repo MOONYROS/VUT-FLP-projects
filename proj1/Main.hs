@@ -130,7 +130,6 @@ calculateScore :: [([Double], String)] -> Int -> Double -> Double
 calculateScore dataset featureIndex threshold =
     let
         -- rozdelim si dataset na dve poloviny podle thresholdu
-        -- TODO: zkontrolovat mensi/vetsi/rovno
         left = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
         right = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
 
@@ -181,7 +180,6 @@ findBestSplit dataset
 trainTree :: [([Double], String)] -> Tree
 trainTree dataset
     | null dataset = error "Empty dataset!"
-    -- TODO: osetrit a overit podminky
     | length (group (sort labels)) == 1 = Leaf (head labels) -- data jsou v jedne tride => Leaf
     | otherwise = Node featureIndex threshold (trainTree leftDataset) (trainTree rightDataset) -- data nemaji stejnou tridu => Node
     where
@@ -191,7 +189,6 @@ trainTree dataset
         -- najdeme nejlepsi rozdeleni
         (featureIndex, threshold, _) = findBestSplit dataset
         
-        -- TODO: overit spravnost <, >=
         leftDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex < threshold]
         rightDataset = [(features, label) | (features, label) <- dataset, features !! featureIndex >= threshold]
 
