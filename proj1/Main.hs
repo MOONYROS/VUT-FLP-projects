@@ -12,14 +12,17 @@ import Data.List.Split (splitOn)
 import Data.Ord (comparing)
 import System.Environment (getArgs)
 
+-- datova struktura pro rozhodovaci strom
 data Tree = Node Int Double Tree Tree
     | Leaf String
     deriving (Show)
 
+-- datova struktura pro radek souboru
 data TreeLine = TreeNode Int (Int, Double)
     | TreeLeaf Int String
     deriving (Show)
 
+-- ocekavany pocet mezer souboru pri zanoreni stromu
 expectedIndentStep :: Int
 expectedIndentStep = 2
 
@@ -45,18 +48,22 @@ isNode line = "Node:" `isPrefixOf` trimStart line
 isLeaf :: String -> Bool
 isLeaf line = "Leaf:" `isPrefixOf` trimStart line
 
+-- spocita uroven zanoreni
 countIndent :: String -> Int
 countIndent = length . takeWhile (== ' ')
 
+-- zpracuje uzel
 parseNode :: String -> (Int, Double)
 parseNode line =
     case splitOn ", " (drop 6 (trimStart line)) of
         [idxStr, threshStr] -> (read idxStr, read threshStr)
         _ -> error "Neplatny format uzlu"
 
+-- zpracuje list
 parseLeaf :: String -> String
 parseLeaf line = drop 6  (trimStart line)
 
+-- zpracuje cely radek souboru
 parseLine :: String -> TreeLine
 parseLine line
     | isNode line = TreeNode indent (parseNode line)
@@ -76,6 +83,7 @@ buildTree (TreeNode indent (index, threshold) : rest) =
 buildTree (TreeLeaf _ label : rest) = (Leaf label, rest)
 buildTree [] = error "Neocekavany konec souboru"
 
+-- vytvari podstrom
 buildSubTree :: Int -> [TreeLine] -> (Tree, [TreeLine])
 buildSubTree _ [] = error "Neocekavany konec souboru - chybi potomek uzlu."
 buildSubTree expectedIndent treeLines@(x:_) =
@@ -97,6 +105,7 @@ buildSubTree expectedIndent treeLines@(x:_) =
 parseData :: String -> [Double]
 parseData line = map read (splitOn "," (trimStart line))
 
+-- udela klasifikaci dat ve strome
 classifyData :: Tree -> [Double] -> String
 classifyData (Leaf className) _ = className
 classifyData (Node index threshold leftTree rightTree) features = 
@@ -111,6 +120,7 @@ classifyData (Node index threshold leftTree rightTree) features =
 -- ============ TREE TRAINING ============
 -- =======================================
 
+-- zpracuje trenovaci data
 parseTrainData :: String -> ([Double], String)
 parseTrainData line =
     let 
@@ -153,6 +163,7 @@ calculateScore dataset featureIndex threshold =
     in
         weightedGini
 
+-- najde nejlepsi rozdelovaci bod v trenovacich datech
 findBestSplit :: [([Double], String)] -> (Int, Double, Double)
 findBestSplit dataset
     | null dataset = error "Empty dataset!" -- ZBYTECNE?
@@ -182,6 +193,7 @@ findBestSplit dataset
                 [(featureIndex, threshold, calculateScore inputData featureIndex threshold) |
                     (threshold, _) <- thresholds] -- vezmeme si pouze hodnotu thresholdu
 
+-- natrenuje strom na zaklade trenovacich dat
 trainTree :: [([Double], String)] -> Tree
 trainTree dataset
     | null dataset = error "Empty dataset!"
@@ -218,6 +230,7 @@ treeToOutput tree = treeToOutputHelper tree 0
 -- ================ MAIN ================
 -- ======================================
 
+-- vypise napovedu na vystup
 showHelp :: IO ()
 showHelp = putStrLn $ unlines
     [ "\nPouziti programu flp-fun"
@@ -228,6 +241,7 @@ showHelp = putStrLn $ unlines
     , "\t- Natrenuje rozhodovaci strom na zaklade trenovacich dat."
     ]
 
+-- hlavni beh programu
 main :: IO ()
 main = do
     args <- getArgs
