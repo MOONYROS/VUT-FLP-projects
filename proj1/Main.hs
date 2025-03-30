@@ -101,7 +101,7 @@ buildSubTree expectedIndent treeLines@(x:_) =
 -- ========= DATA CLASSIFICATION =========
 -- =======================================
 
--- proparsuji vstupni radek, rozdelim podle carek a pomoci map read premapuji String na Double
+-- proparsuje vstupni radek, rozdeli podle carek a pomoci map read premapuje String na Double
 parseData :: String -> [Double]
 parseData line = map read (splitOn "," (trimStart line))
 
@@ -166,8 +166,8 @@ calculateScore dataset featureIndex threshold =
 -- najde nejlepsi rozdelovaci bod v trenovacich datech
 findBestSplit :: [([Double], String)] -> (Int, Double, Double)
 findBestSplit dataset
-    | null dataset = error "Empty dataset!" -- ZBYTECNE?
-    | length (group (sort (map snd dataset))) == 1 = error "Redundant split!" -- ZBYTECNE?
+    | null dataset = error "Empty dataset!"
+    | length (group (sort (map snd dataset))) == 1 = error "Redundant split!"
     | otherwise = minimumBy (comparing (\(_, _, gini) -> gini)) allSplits -- ze vsech splitu se vybere ten nejmensi
     where
         numFeatures = length (fst (head dataset)) -- pocet priznaku prvniho prvku, potom predpokladame stejne
@@ -178,10 +178,10 @@ findBestSplit dataset
         findSplits :: [([Double], String)] -> Int -> [(Int, Double, Double)]
         findSplits inputData featureIndex =
             let
-                featureValues = [(features !! featureIndex, features, label) | (features, label) <- inputData] -- vezmu vsechny trojice (ID, [feature], label)
-                sortedByFeature = sort featureValues -- a seradim
+                featureValues = [(features !! featureIndex, features, label) | (features, label) <- inputData] -- vezme vsechny trojice (ID, [feature], label)
+                sortedByFeature = sort featureValues
 
-                -- vypocitam se mozne prahy
+                -- vypocitaji se mozne prahy
                 -- vnitrni zip sjednoti sousedni vrcholy s podminkou, ze nebudou stejne
                 -- vnejsi zip potom kazdemu paru vrcholu priradi index
                 -- format: [(index, (vrchol1, vrchol2))]
@@ -189,9 +189,9 @@ findBestSplit dataset
                     (i, ((v1, _, _), (v2, _, _))) <- zip [0 :: Int ..] (zip sortedByFeature (tail sortedByFeature)),
                     v1 /= v2]
             in
-                -- pro kazdy prah vypocitam skore a vratim trojici (index priznaku, prah, skore)
+                -- pro kazdy prah vypocita skore a vrati trojici (index priznaku, prah, skore)
                 [(featureIndex, threshold, calculateScore inputData featureIndex threshold) |
-                    (threshold, _) <- thresholds] -- vezmeme si pouze hodnotu thresholdu
+                    (threshold, _) <- thresholds] -- vezme si pouze hodnotu thresholdu
 
 -- natrenuje strom na zaklade trenovacich dat
 trainTree :: [([Double], String)] -> Tree
