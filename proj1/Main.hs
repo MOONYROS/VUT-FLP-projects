@@ -1,3 +1,10 @@
+{- |
+Module: Main
+Description: Decision tree implementation for BUT FIT - FLP (2024/2025)
+Author: Ondrej Lukasek (xlukas15)
+Date: 2025-03-30
+-}
+
 module Main where
 
 import Data.List (isPrefixOf, minimumBy, sort, group)
