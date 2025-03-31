@@ -11,7 +11,4 @@ $(TARGET): $(SRC)
 clean:
 	rm -f $(TARGET) *.hi *.o
 
-run: $(TARGET)
-	./$(TARGET)
-
 .PHONY: all clean run

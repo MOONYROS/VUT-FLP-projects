@@ -108,13 +108,13 @@ parseData line = map read (splitOn "," (trimStart line))
 -- udela klasifikaci dat ve strome
 classifyData :: Tree -> [Double] -> String
 classifyData (Leaf className) _ = className
-classifyData (Node index threshold leftTree rightTree) features = 
+classifyData (Node index threshold left right) features = 
     let 
         feature = features !! index
     in 
         if feature < threshold then
-            classifyData leftTree features
-        else classifyData rightTree features
+            classifyData left features
+        else classifyData right features
 
 -- =======================================
 -- ============ TREE TRAINING ============
