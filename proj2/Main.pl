@@ -93,6 +93,9 @@ move(Left, [Head|Tail], State, History) :-
             try_rules(Left, Tail, State, Head, Rules, History)
         )
     ).
+% Prázdné políčko vpravo reprezentujeme jako mezeru
+move(Left, [], State, History) :-
+    move(Left, [' '], State, History).
 
 % Najde pravidlo vedoucí do koncového stavu F, pokud existuje
 select_terminal_rule(Rules, rule(State, Symbol, 'F', Action)) :-
@@ -101,10 +104,6 @@ select_terminal_rule(Rules, rule(State, Symbol, 'F', Action)) :-
 % Aplikace konkrétního pravidla přímo
 apply_rule_direct(Left, Tail, _, rule(_, _, NewState, Action), History) :-
     apply_rule(Left, Tail, _, NewState, Action, History).
-
-% Prázdné políčko vpravo reprezentujeme jako mezeru
-move(Left, [], State, History) :-
-    move(Left, [' '], State, History).
 
 % Aplikace pravidla přesunu vlevo
 apply_rule(Left, Tail, _, NewState, 'L', History) :-
