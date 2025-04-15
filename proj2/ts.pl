@@ -39,3 +39,55 @@ start :-
 		split_lines(LL,S),
 		write(S),
 		halt.
+
+% ========= ZPRACOVANI VSTUPU =========
+
+% pravidlo ma 4 parametry: aktualni stav, symbol pod hlavou, novy stav, akce
+:- dynamic rule/4.
+
+% spustime program
+:- initialization(start).
+
+% vezmeme si vstup a rozdelime jej na
+% pravidla (vsechny radky krome posledniho) a pasku (posledni radek)
+process_file(AllLines) :-
+    append(RuleLines, [Tape], AllLines),
+    maplist(process_rule, RuleLines),
+    process_tape(Tape).
+
+% zpracuje radek pravidla na ctverici rule (viz vyse)
+process_rule(Rule) :-
+    Rule = [PrevState, ReadSymbol, NextState, Action],
+
+    % TODO: ZBAVIT SE MEZER?
+
+    % prevede si seznamy na atomy
+    atom_chars(PrevAtom, PrevState),
+    atom_chars(ReadAtom, ReadSymbol),
+    atom_chars(NextAtom, NextState),
+    atom_chars(ActionAtom, Action),
+
+    % tyto atomy se pak rozextrahuji
+    sub_atom(PrevAtom, 0, 1, After, PrevState),
+    sub_atom(ReadAtom, 0, 1, After, ReadSymbol),
+    sub_atom(NextAtom, 0, 1, After, NextState),
+
+    % ale action muze byt L, R nebo prepsani => musime udelat sloziteji
+    (
+        ActionAtom = 'L' -> Action = 'L';
+        ActionAtom = 'R' -> Action = 'R';
+        sub_atom(ActionAtom, 0, 1, After, Action)
+    ),
+
+    assertz(rule(PrevState, ReadSymbol, NextState, Action)).
+
+% zpracuje pasky a spusti simulaci TS
+% nalevo je prazdno, napravo paska, pocatecni stav je S
+process_tape([Tape|_]) :-
+    flatten(Tape, FlatTape),
+    simulate([], FlatTape, 'S', []).
+
+% ========= SIMULACE TS =========
+
+simulate([], Tape, 'S', []).
+% TODO
