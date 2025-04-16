@@ -89,5 +89,28 @@ process_tape([Tape|_]) :-
 
 % ========= SIMULACE TS =========
 
-simulate([], Tape, 'S', []).
-% TODO
+% samotna simulace TS
+% dostava pasku vlevo a vpravo od hlavy, aktualni stav a historii konfiguraci
+simulate(Left, Right, State, History) :-
+    print_configuration(Left, Right, State),
+    (
+        State = 'F' -> true % pokud je TS v koncovem stavu, konci se
+    ;
+        \+ member((Left, Right, State), History), % kontrola, jestli tento stav uz nebyl
+        make_move(Left, Right, State, [(Left, Right, State)|History]) % aplikace prechodu + zapis do historie
+    ).
+
+% vypise konfiguraci automatu na vystup
+print_configuration(Left, Right, State) :-
+    reverse(Left, RevLeft), % nejdriv si otocim pasku
+    (
+        % TODO - checknout, idk, jestli to dava smysl
+        Right \= [] -> % pokud neni prava cast prazdna...
+        append(ReverseLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
+    ;
+        append(ReverseLeft, [State], Configuration) % ... jinak bude na konci stav
+    ),
+    atomic_list_concat(Configuration, '', Output),
+    writeln(Output).
+
+make_move.
