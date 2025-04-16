@@ -95,9 +95,9 @@ simulate(Left, Right, State, History) :-
     print_configuration(Left, Right, State),
     (
         State = 'F' -> true % pokud je TS v koncovem stavu, konci se
-    ;
-        \+ member((Left, Right, State), History), % kontrola, jestli tento stav uz nebyl
-        make_move(Left, Right, State, [(Left, Right, State)|History]) % aplikace prechodu + zapis do historie
+        ;
+            \+ member((Left, Right, State), History), % kontrola, jestli tento stav uz nebyl
+            make_move(Left, Right, State, [(Left, Right, State)|History]) % aplikace prechodu + zapis do historie
     ).
 
 % vypise konfiguraci automatu na vystup
@@ -106,11 +106,37 @@ print_configuration(Left, Right, State) :-
     (
         % TODO - checknout, idk, jestli to dava smysl
         Right \= [] -> % pokud neni prava cast prazdna...
-        append(ReverseLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
-    ;
-        append(ReverseLeft, [State], Configuration) % ... jinak bude na konci stav
+            append(ReverseLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
+        ;
+            append(ReverseLeft, [State], Configuration) % ... jinak bude na konci stav
     ),
     atomic_list_concat(Configuration, '', Output),
     writeln(Output).
 
-make_move.
+% aplikace pravidla, pokud jsme na konci pasky
+make_move(Left, [], State, History) :-
+    make_move(Left, [' '], State, History).
+
+% aplikace pravidla, pro neprazdnou pravou pasku
+make_move(Left, [Head|Tail], State, History) :-
+    % najdeme vsechna pravidla vyhovujici aktualnimu stavu
+    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules)
+    (
+        Rules = [] -> % pokud jsme nenasli zadne pravidlo - konec
+            writeln('No rule can be applied!'),
+            halt(1)
+        ;
+            (
+                % zkusime najit ukoncujici pravidlo - pokud jsme nasli, pouzijeme
+                get_finishing_rule(Rules, FinishingRule) ->
+                    apply_rule(Left, Tail, State, Head, FinishingRule, History)
+                ;
+                    % TODO - vykoumat, jak zkouset pravidla
+            )
+    )
+
+get_finishing_rule.
+
+apply_rule.
+
+
