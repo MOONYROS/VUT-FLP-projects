@@ -120,23 +120,45 @@ make_move(Left, [], State, History) :-
 % aplikace pravidla, pro neprazdnou pravou pasku
 make_move(Left, [Head|Tail], State, History) :-
     % najdeme vsechna pravidla vyhovujici aktualnimu stavu
-    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules)
+    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
     (
         Rules = [] -> % pokud jsme nenasli zadne pravidlo - konec
             writeln('No rule can be applied!'),
             halt(1)
         ;
             (
-                % zkusime najit ukoncujici pravidlo - pokud jsme nasli, pouzijeme
+                % zkusime najit ukoncujici pravidlo - pokud jsme nasli, pouzijeme ho,
+                % jinak pouzijeme prvni pravidlo
                 get_finishing_rule(Rules, FinishingRule) ->
                     apply_rule(Left, Tail, State, Head, FinishingRule, History)
                 ;
-                    % TODO - vykoumat, jak zkouset pravidla
+                    Rules = [FirstRule|_],
+                    apply_rule(Left, Tail, State, Head, FirstRule, History)
             )
-    )
+    ).
 
-get_finishing_rule.
+% ziska ukoncujici pravidlo
+get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
+    member(rule(State, Symbol, 'F', Action), Rules).
 
-apply_rule.
-
-
+% aplikace konkretniho pravidla
+apply_rule(Left, Tail, _, _, rule(_, _, NewState, Action), History) :-
+    (
+        % posun doleva
+        Action = 'L' ->
+            (
+                Left = [NewHead|NewLeft] ->
+                    simulate(NewLeft, [NewHead|Tail], NewState, History)
+                ;
+                    simulate([], [' '|Tail], NewState, History) % jsme na levem okraji
+            )
+        ;
+            (
+                % posun doprava
+                Action = 'R' ->
+                    simulate([Head|Left], Tail, NewState, History)
+                ;
+                    % zapis/prepis symbolu
+                    simulate(Left, [Action|Tail], NewState, History)
+            )
+    ).
