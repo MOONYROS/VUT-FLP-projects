@@ -33,12 +33,14 @@ split_line([H|T], [[H|G]|S1]) :- split_line(T,[G|S1]). % G je prvni seznam ze se
 split_lines([],[]).
 split_lines([L|Ls],[H|T]) :- split_lines(Ls,T), split_line(L,H).
 
+% ========= START PROGRAMU =========
+
 start :-
-		prompt(_, ''),
-		read_lines(LL),
-		split_lines(LL,S),
-		write(S),
-		halt.
+    prompt(_, ''),
+    read_lines(LL),
+    split_lines(LL, S),
+    process_file(S),
+    halt.
 
 % ========= ZPRACOVANI VSTUPU =========
 
@@ -59,8 +61,6 @@ process_file(AllLines) :-
 process_rule(Rule) :-
     Rule = [PrevState, ReadSymbol, NextState, Action],
 
-    % TODO: ZBAVIT SE MEZER?
-
     % prevede si seznamy na atomy
     atom_chars(PrevAtom, PrevState),
     atom_chars(ReadAtom, ReadSymbol),
@@ -68,18 +68,18 @@ process_rule(Rule) :-
     atom_chars(ActionAtom, Action),
 
     % tyto atomy se pak rozextrahuji
-    sub_atom(PrevAtom, 0, 1, After, PrevState),
-    sub_atom(ReadAtom, 0, 1, After, ReadSymbol),
-    sub_atom(NextAtom, 0, 1, After, NextState),
+    sub_atom(PrevAtom, 0, 1, _, PrevStateChar),
+    sub_atom(ReadAtom, 0, 1, _, ReadSymbolChar),
+    sub_atom(NextAtom, 0, 1, _, NextStateChar),
 
     % ale action muze byt L, R nebo prepsani => musime udelat sloziteji
     (
-        ActionAtom = 'L' -> Action = 'L';
-        ActionAtom = 'R' -> Action = 'R';
-        sub_atom(ActionAtom, 0, 1, After, Action)
+        ActionAtom = 'L' -> ActionChar = 'L';
+        ActionAtom = 'R' -> ActionChar = 'R';
+        sub_atom(ActionAtom, 0, 1, _, ActionChar)
     ),
 
-    assertz(rule(PrevState, ReadSymbol, NextState, Action)).
+    assertz(rule(PrevStateChar, ReadSymbolChar, NextStateChar, ActionChar)).
 
 % zpracuje pasky a spusti simulaci TS
 % nalevo je prazdno, napravo paska, pocatecni stav je S
@@ -106,9 +106,9 @@ print_configuration(Left, Right, State) :-
     (
         % TODO - checknout, idk, jestli to dava smysl
         Right \= [] -> % pokud neni prava cast prazdna...
-            append(ReverseLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
+            append(RevLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
         ;
-            append(ReverseLeft, [State], Configuration) % ... jinak bude na konci stav
+            append(RevLeft, [State], Configuration) % ... jinak bude na konci stav
     ),
     atomic_list_concat(Configuration, '', Output),
     writeln(Output).
@@ -142,7 +142,7 @@ get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
     member(rule(State, Symbol, 'F', Action), Rules).
 
 % aplikace konkretniho pravidla
-apply_rule(Left, Tail, _, _, rule(_, _, NewState, Action), History) :-
+apply_rule(Left, Tail, Head, _, rule(_, _, NewState, Action), History) :-
     (
         % posun doleva
         Action = 'L' ->
