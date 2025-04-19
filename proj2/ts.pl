@@ -147,18 +147,24 @@ apply_rule(Left, Tail, State, Head, rule(_, _, NewState, Action), History) :-
         % posun doleva
         Action = 'L' ->
             (
+                % pokud existuje symbol nalevo
                 Left = [NewHead|NewLeft] ->
-                    simulate(NewLeft, [Head|Tail], NewState, History)
+                    % posuneme se doleva na pasce a posuneme hlavu na prvni prvek vpravo
+                    simulate(NewLeft, [NewHead, Head|Tail], NewState, History)
                 ;
+                    % pokud uz vlevo nic nebylo, pod hlavou bude mezera
                     simulate([], [' ', Head|Tail], NewState, History)
             )
         ;
             (
                 % posun doprava
                 Action = 'R' ->
+                    % symbol pod hlavou posuneme doleva, nove bude pod hlavou druhy
+                    % symbol prave casti pasky
                     simulate([Head|Left], Tail, NewState, History)
                 ;
                     % zapis/prepis symbolu
+                    % symbol pod hlavou se prepise na akci
                     simulate(Left, [Action|Tail], NewState, History)
             )
     ).
