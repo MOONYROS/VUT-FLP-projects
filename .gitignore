@@ -1,6 +1,7 @@
 flp-fun
 help_func.pl
 .DS_Store
+extra_tests/
 
 examples/
 public/
