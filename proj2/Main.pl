@@ -47,8 +47,8 @@ start :-
 % pravidlo ma 4 parametry: aktualni stav, symbol pod hlavou, novy stav, akce
 :- dynamic rule/4.
 
-% spustime program
-:- initialization(start).
+% spustime program (odkomentovat, pokud nechceme prekladat pres 'make')
+% :- initialization(start).
 
 % vezmeme si vstup a rozdelime jej na
 % pravidla (vsechny radky krome posledniho) a pasku (posledni radek)
