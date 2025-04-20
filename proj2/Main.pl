@@ -1,168 +1,170 @@
-% FLP 2025 – Simulator NTS
-% pouziva pomocne predikaty read_line, read_lines, split_line, split_lines
+% FLP 2024/2025 - Projekt 2 - Turinguv Stroj
+% Ondrej Lukasek (xlukas15@stud.fit.vutbr.cz)
+% 15.4.2025
 
-% pravidla jsou dynamicka - lze je mazat a pridavat za behu
-:- dynamic rule/4.
+% ========= POMOCNE FUNKCE =========
 
-% po spusteni programu se automaticky vola start
-:- initialization(start).
-
-%%%%%%%%%%%%%%%%%%%%
-% cteni vstupu
-%%%%%%%%%%%%%%%%%%%%
-
-% hlavni predikat - cte vstup, zpracuje ho a spusti simulaci
-start :-
-    prompt(_, ''), % vypne vyzvu pro zadani (lepsi nacitani ze souboru)
-    read_lines(Lines), % nacte vsechny radky ze vstupu
-    split_lines(Lines, SplitLines), % radky se rozdeli na seznamy "slov" (znaky oddelene mezerami)
-    parse_input(SplitLines). % zpracovani vstupu
-
-% rozpoznani vstupu - vsechny radky krome posledniho jsou pravidla, posledni pravidlo je pocatecni paska
-parse_input(SplitLines) :-
-    append(RuleLines, [TapeLine], SplitLines),
-    maplist(parse_rule, RuleLines), % parsuje a uklada pravidla do databaze
-    TapeLine = [TapeChars|_], % ziska prvni slovo posledniho radku jako seznam znaku pasky (proste paska)
-    flatten(TapeChars, FlatTapeChars),
-    simulate([], FlatTapeChars, 'S', []). % spusti simulaci z vychoziho stavu 'S'
-
-parse_rule([From, Read, To, Action]) :-
-    % odstranujeme prazdne seznamu, ktere muze vytvorit split_line
-    delete(From, [], FromClean),
-    delete(Read, [], ReadClean),
-    delete(To, [], ToClean),
-    delete(Action, [], ActionClean),
-    
-    % prevedeme seznamy znaku na atomy
-    atom_chars(FromAtom, FromClean),
-    atom_chars(ReadAtom, ReadClean),
-    atom_chars(ToAtom, ToClean),
-    atom_chars(ActionAtom, ActionClean),
-    
-    % extrahujeme prvni znaky - stavy a symboly
-    sub_atom(FromAtom, 0, 1, _, FromState),
-    sub_atom(ReadAtom, 0, 1, _, ReadSymbol),
-    sub_atom(ToAtom, 0, 1, _, ToState),
-    
-    % urceni, jestli je akce posun nebo zapis
-    (
-        ActionAtom = 'L' -> FinalAction = 'L' ; % posun vlevo
-        ActionAtom = 'R' -> FinalAction = 'R' ; % posun vpravo
-        sub_atom(ActionAtom, 0, 1, _, FinalAction)  % jinak se jedna o zapis symbolu
-    ),
-    
-    assertz(rule(FromState, ReadSymbol, ToState, FinalAction)). % ulozeni pravidla do databaze
-
-%%%%%%%%%%%%%%%%%%%%
-% simulace stroje
-%%%%%%%%%%%%%%%%%%%%
-
-% simulace stroje:
-%   - paska vlevo
-%   - paska vpravo (vcetne hlavicky)
-%   - aktualni stav
-%   - historie konfiguraci
-simulate(Left, Right, State, History) :-
-    print_config(Left, Right, State), % vypise aktualni konfiguraci
-    (
-        State = 'F' -> true % pokud jsme v koncovem stavu, tak koncime
-    ;
-        \+ member((Left, Right, State), History), % kontrola cykleni
-        move(Left, Right, State, [(Left, Right, State)|History]) % zkusime aplikovat prechody
-    ).
-
-% vypis konfigurace TS - sleduje se stav aktualni pozice hlavicky
-print_config(Left, Right, State) :-
-    reverse(Left, LeftRev), % otocime pasku vlevo (aby sla zprava-doleva)
-    (
-        Right = [Head|Tail] ->
-        append(LeftRev, [State, Head | Tail], Config),
-        atomic_list_concat(Config, '', Output),
-        writeln(Output)
-    ;
-        append(LeftRev, [State], Config), % pokud je prava cast prazdna
-        atomic_list_concat(Config, '', Output),
-        writeln(Output)
-    ).
-
-% aplikace prechodu
-move(Left, [Head|Tail], State, History) :-
-    !,
-    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
-    (
-        Rules = [] -> writeln('No applicable rule.'), halt(1) ;
-        (select_terminal_rule(Rules, TerminalRule) -> % nejdrive zkusime pravidlo vedouci do F
-            apply_rule_direct(Left, Tail, Head, TerminalRule, History)
-        ;
-            try_rules(Left, Tail, State, Head, Rules, History)
-        )
-    ).
-% pokud je prava cast pasky prazdna, pak ji povazujeme za mezeru
-move(Left, [], State, History) :-
-    move(Left, [' '], State, History).
-
-% vyber pravidla, ktere prechazi do koncoveho stavu
-select_terminal_rule(Rules, rule(State, Symbol, 'F', Action)) :-
-    member(rule(State, Symbol, 'F', Action), Rules).
-
-% prima aplikace pravidla vedouciho do stavu F
-apply_rule_direct(Left, Tail, _, rule(_, _, NewState, Action), History) :-
-    apply_rule(Left, Tail, _, NewState, Action, History).
-
-% aplikace posunu vlevo
-apply_rule(Left, Tail, _, NewState, 'L', History) :-
-    (
-        Left = [NewHead|NewLeft] ->
-        simulate(NewLeft, [NewHead|Tail], NewState, History)
-    ;
-        simulate([], [' '|Tail], NewState, History) % pokud jsme na levem okraji, pridame mezeru
-    ).
-
-% aplikace presunu vpravo
-apply_rule(Left, Tail, Head, NewState, 'R', History) :-
-    simulate([Head|Left], Tail, NewState, History).
-
-% aplikace zapisu symbolu - nahradime aktualni hlavicku novym symbolem
-apply_rule(Left, Tail, _, NewState, WriteSymbol, History) :-
-    \+ (WriteSymbol = 'L' ; WriteSymbol = 'R'),
-    simulate(Left, [WriteSymbol|Tail], NewState, History).
-
-% postupne zkouseni pravidel (jednoho po druhem)
-try_rules(Left, Tail, State, Head, [rule(State, Head, NewState, Action)|_], History) :-
-    apply_rule(Left, Tail, Head, NewState, Action, History).
-
-try_rules(Left, Tail, State, Head, [_|OtherRules], History) :-
-    try_rules(Left, Tail, State, Head, OtherRules, History).
-
-%%%%%%%%%%%%%%%%%%%%
-% pomocne funkce
-%%%%%%%%%%%%%%%%%%%%
-
-% cte jeden radek jako seznam znaku
+/** cte radky ze standardniho vstupu, konci na LF nebo EOF */
 read_line(L,C) :-
-    get_char(C),
-    (isEOFEOL(C), L = [], !;
-        read_line(LL,_),
-        [C|LL] = L).
+	get_char(C),
+	(isEOFEOL(C), L = [], !;
+		read_line(LL,_),% atom_codes(C,[Cd]),
+		[C|LL] = L).
 
-% zjisti konec radku nebo konec souboru
+/** testuje znak na EOF nebo LF */
 isEOFEOL(C) :-
-    C == end_of_file;
-    (char_code(C,Code), Code==10).
+	C == end_of_file;
+	(char_code(C,Code), Code==10).
 
 % nacita vsechny radky ze vstupu
 read_lines(Ls) :-
-    read_line(L,C),
-    ( C == end_of_file, Ls = [] ;
-        read_lines(LLs), Ls = [L|LLs]
-    ).
+	read_line(L,C),
+	( C == end_of_file, Ls = [] ;
+	  read_lines(LLs), Ls = [L|LLs]
+	).
 
-% rozdeli radek na slova - seznamy znaku oddelene mezerou
+/** rozdeli radek na podseznamy */
 split_line([],[[]]) :- !.
 split_line([' '|T], [[]|S1]) :- !, split_line(T,S1).
-split_line([32|T], [[]|S1]) :- !, split_line(T,S1).
-split_line([H|T], [[H|G]|S1]) :- split_line(T,[G|S1]).
+split_line([32|T], [[]|S1]) :- !, split_line(T,S1).    % aby to fungovalo i s retezcem na miste seznamu
+split_line([H|T], [[H|G]|S1]) :- split_line(T,[G|S1]). % G je prvni seznam ze seznamu seznamu G|S1
 
-% aplikuje split_line na kazdy radek
+/** vstupem je seznam radku (kazdy radek je seznam znaku) */
 split_lines([],[]).
 split_lines([L|Ls],[H|T]) :- split_lines(Ls,T), split_line(L,H).
+
+% ========= START PROGRAMU =========
+
+start :-
+    prompt(_, ''),
+    read_lines(LL),
+    split_lines(LL, S),
+    process_file(S),
+    halt.
+
+% ========= ZPRACOVANI VSTUPU =========
+
+% pravidlo ma 4 parametry: aktualni stav, symbol pod hlavou, novy stav, akce
+:- dynamic rule/4.
+
+% spustime program
+:- initialization(start).
+
+% vezmeme si vstup a rozdelime jej na
+% pravidla (vsechny radky krome posledniho) a pasku (posledni radek)
+process_file(AllLines) :-
+    append(RuleLines, [Tape], AllLines),
+    maplist(process_rule, RuleLines),
+    process_tape(Tape).
+
+% zpracuje radek pravidla na ctverici rule (viz vyse)
+process_rule(Rule) :-
+    Rule = [PrevState, ReadSymbol, NextState, Action],
+
+    % prevede si seznamy na atomy
+    atom_chars(PrevAtom, PrevState),
+    atom_chars(ReadAtom, ReadSymbol),
+    atom_chars(NextAtom, NextState),
+    atom_chars(ActionAtom, Action),
+
+    % tyto atomy se pak rozextrahuji
+    sub_atom(PrevAtom, 0, 1, _, PrevStateChar),
+    sub_atom(ReadAtom, 0, 1, _, ReadSymbolChar),
+    sub_atom(NextAtom, 0, 1, _, NextStateChar),
+
+    % ale action muze byt L, R nebo prepsani => musime udelat sloziteji
+    (
+        ActionAtom = 'L' -> ActionChar = 'L';
+        ActionAtom = 'R' -> ActionChar = 'R';
+        sub_atom(ActionAtom, 0, 1, _, ActionChar)
+    ),
+
+    assertz(rule(PrevStateChar, ReadSymbolChar, NextStateChar, ActionChar)).
+
+% zpracuje pasky a spusti simulaci TS
+% nalevo je prazdno, napravo paska, pocatecni stav je S
+process_tape([Tape|_]) :-
+    flatten(Tape, FlatTape),
+    simulate([], FlatTape, 'S', []).
+
+% ========= SIMULACE TS =========
+
+% samotna simulace TS
+% dostava pasku vlevo a vpravo od hlavy, aktualni stav a historii konfiguraci
+simulate(Left, Right, State, History) :-
+    print_configuration(Left, Right, State),
+    (
+        State = 'F' -> true % pokud je TS v koncovem stavu, konci se
+        ;
+            \+ member((Left, Right, State), History), % kontrola, jestli tento stav uz nebyl
+            make_move(Left, Right, State, [(Left, Right, State)|History]) % aplikace prechodu + zapis do historie
+    ).
+
+% vypise konfiguraci automatu na vystup
+print_configuration(Left, Right, State) :-
+    reverse(Left, RevLeft), % nejdriv si otocim pasku
+    (
+        % TODO - checknout, idk, jestli to dava smysl
+        Right \= [] -> % pokud neni prava cast prazdna...
+            append(RevLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
+        ;
+            append(RevLeft, [State], Configuration) % ... jinak bude na konci stav
+    ),
+    atomic_list_concat(Configuration, '', Output),
+    writeln(Output).
+
+% aplikace pravidla, pokud jsme na konci pasky
+make_move(Left, [], State, History) :-
+    make_move(Left, [' '], State, History).
+
+% aplikace pravidla, pro neprazdnou pravou pasku
+make_move(Left, [Head|Tail], State, History) :-
+    % najdeme vsechna pravidla vyhovujici aktualnimu stavu
+    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
+    (
+        Rules = [] -> % pokud jsme nenasli zadne pravidlo - konec
+            writeln('No rule can be applied!'),
+            halt(1)
+        ;
+            (
+                % zkusime najit ukoncujici pravidlo - pokud jsme nasli, pouzijeme ho,
+                % jinak pouzijeme prvni pravidlo
+                get_finishing_rule(Rules, FinishingRule) ->
+                    apply_rule(Left, Tail, State, Head, FinishingRule, History)
+                ;
+                    Rules = [FirstRule|_],
+                    apply_rule(Left, Tail, State, Head, FirstRule, History)
+            )
+    ).
+
+% ziska ukoncujici pravidlo
+get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
+    member(rule(State, Symbol, 'F', Action), Rules).
+
+% aplikace konkretniho pravidla
+apply_rule(Left, Tail, State, Head, rule(_, _, NewState, Action), History) :-
+    (
+        % posun doleva
+        Action = 'L' ->
+            (
+                % pokud existuje symbol nalevo
+                Left = [NewHead|NewLeft] ->
+                    % posuneme se doleva na pasce a posuneme hlavu na prvni prvek vpravo
+                    simulate(NewLeft, [NewHead, Head|Tail], NewState, History)
+                ;
+                    % pokud uz vlevo nic nebylo, pod hlavou bude mezera
+                    simulate([], [' ', Head|Tail], NewState, History)
+            )
+        ;
+            (
+                % posun doprava
+                Action = 'R' ->
+                    % symbol pod hlavou posuneme doleva, nove bude pod hlavou druhy
+                    % symbol prave casti pasky
+                    simulate([Head|Left], Tail, NewState, History)
+                ;
+                    % zapis/prepis symbolu
+                    % symbol pod hlavou se prepise na akci
+                    simulate(Left, [Action|Tail], NewState, History)
+            )
+    ).
