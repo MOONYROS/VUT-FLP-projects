@@ -142,7 +142,7 @@ get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
     member(rule(State, Symbol, 'F', Action), Rules).
 
 % aplikace konkretniho pravidla
-apply_rule(Left, Tail, State, Head, rule(_, _, NewState, Action), History) :-
+apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History) :-
     (
         % posun doleva
         Action = 'L' ->
