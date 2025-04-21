@@ -159,9 +159,14 @@ apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History) :-
             (
                 % posun doprava
                 Action = 'R' ->
-                    % symbol pod hlavou posuneme doleva, nove bude pod hlavou druhy
-                    % symbol prave casti pasky
-                    simulate([Head|Left], Tail, NewState, History)
+                    (
+                        % jetslize vpravo mame symbol, posuneme se na nej
+                        Tail \= [] ->
+                            simulate([Head|Left], Tail, NewState, History)
+                        ;
+                            % pokud vpravo nic neni, pridame mezeru
+                            simulate([Head|Left], [' '], NewState, History)
+                    )
                 ;
                     % zapis/prepis symbolu
                     % symbol pod hlavou se prepise na akci
