@@ -138,6 +138,10 @@ create_configuration(Left, Right, State, Configuration) :-
     ),
     atomic_list_concat(ConfigList, '', Configuration).
 
+% funkce pro ziskani pravidla, ktere vede do koncoveho stavu 'F'
+get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
+    member(rule(State, Symbol, 'F', Action), Rules).
+
 % aplikace pravidel NTS
 % na konci pasky pridame mezeru
 apply_rule(Left, [], State, History, PrevConfigs, Path) :-
@@ -146,9 +150,16 @@ apply_rule(Left, [], State, History, PrevConfigs, Path) :-
 apply_rule(Left, [Head|Tail], State, History, PrevConfigs, Path) :-
     findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
     
-
     Rules \= [], % pokud jsme nejaka pravidla nasli
-    member(Rule, Rules), % vezmeme jedno z nich
+    
+    % zkusime najit pravidlo vedouci do 'F'
+    (
+        get_finishing_rule(Rules, FinishingRule) ->
+            Rule = FinishingRule  % pokud existuje, pouzijeme ho
+        ;
+            member(Rule, Rules)  % jinak vezmeme libovolne pravidlo
+    ),
+    
     Rule = rule(_, _, NewState, Action), % a aplikujeme ho
     
     % podle akce zvolime operaci
