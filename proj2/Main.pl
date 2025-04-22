@@ -85,40 +85,51 @@ process_rule(Rule) :-
 % nalevo je prazdno, napravo paska, pocatecni stav je S
 process_tape([Tape|_]) :-
     flatten(Tape, FlatTape),
-    simulate([], FlatTape, 'S', []).
+    simulate([], FlatTape, 'S', [], Configs), % zacatek simulace s prazdnym seznamem konfiguraci
+    print_configurations(Configs).
 
 % ========= SIMULACE TS =========
 
 % samotna simulace TS
-% dostava pasku vlevo a vpravo od hlavy, aktualni stav a historii konfiguraci
-simulate(Left, Right, State, History) :-
-    print_configuration(Left, Right, State),
+% dostava pasku vlevo a vpravo od hlavy, aktualni stav, historii konfiguraci a seznam konfiguraci
+simulate(Left, Right, State, History, Configs) :-
+    % vytvorime novou konfiguraci
+    create_configuration(Left, Right, State, Config),
     (
-        State = 'F' -> true % pokud je TS v koncovem stavu, konci se
+        % pokud jsme v koncovem stavu, vratime aktualni seznam konfiguraci s pridanou aktualni konfiguraci
+        State = 'F' ->
+            Configs = [Config]
         ;
             \+ member((Left, Right, State), History), % kontrola, jestli tento stav uz nebyl
-            make_move(Left, Right, State, [(Left, Right, State)|History]) % aplikace prechodu + zapis do historie
+            % aplikace prechodu + zapis do historie
+            make_move(Left, Right, State, [(Left, Right, State)|History], NextConfigs),
+            % pridam aktualni konfiguraci k ostatnim
+            Configs = [Config|NextConfigs]
     ).
 
-% vypise konfiguraci automatu na vystup
-print_configuration(Left, Right, State) :-
+% vytvoreni konfiguarace z pasky vlevo, vpravo a stavu
+create_configuration(Left, Right, State, Configuration) :-
     reverse(Left, RevLeft), % nejdriv si otocim pasku
     (
-        % TODO - checknout, idk, jestli to dava smysl
         Right \= [] -> % pokud neni prava cast prazdna...
-            append(RevLeft, [State|Right], Configuration) % ... spojime ji se stavem do configu...
+            append(RevLeft, [State|Right], ConfigList) % ... spojime ji se stavem do configu...
         ;
-            append(RevLeft, [State], Configuration) % ... jinak bude na konci stav
+            append(RevLeft, [State], ConfigList) % ... jinak bude na konci stav
     ),
-    atomic_list_concat(Configuration, '', Output),
-    writeln(Output).
+    atomic_list_concat(ConfigList, '', Configuration).
+
+% vypsani vsech konfiguraci se seznamu
+print_configurations([]) :- !.
+print_configurations([Head|Tail]) :-
+    writeln(Head),
+    print_configurations(Tail).
 
 % aplikace pravidla, pokud jsme na konci pasky
-make_move(Left, [], State, History) :-
-    make_move(Left, [' '], State, History).
+make_move(Left, [], State, History, Configs) :-
+    make_move(Left, [' '], State, History, Configs).
 
 % aplikace pravidla, pro neprazdnou pravou pasku
-make_move(Left, [Head|Tail], State, History) :-
+make_move(Left, [Head|Tail], State, History, Configs) :-
     % najdeme vsechna pravidla vyhovujici aktualnimu stavu
     findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
     (
@@ -130,10 +141,10 @@ make_move(Left, [Head|Tail], State, History) :-
                 % zkusime najit ukoncujici pravidlo - pokud jsme nasli, pouzijeme ho,
                 % jinak pouzijeme prvni pravidlo
                 get_finishing_rule(Rules, FinishingRule) ->
-                    apply_rule(Left, Tail, State, Head, FinishingRule, History)
+                    apply_rule(Left, Tail, State, Head, FinishingRule, History, Configs)
                 ;
                     Rules = [FirstRule|_],
-                    apply_rule(Left, Tail, State, Head, FirstRule, History)
+                    apply_rule(Left, Tail, State, Head, FirstRule, History, Configs)
             )
     ).
 
@@ -141,8 +152,8 @@ make_move(Left, [Head|Tail], State, History) :-
 get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
     member(rule(State, Symbol, 'F', Action), Rules).
 
-% aplikace konkretniho pravidla
-apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History) :-
+% aplikace konkretniho pravidla - nyní bere i seznam konfigurací
+apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History, Configs) :-
     (
         % posun doleva
         Action = 'L' ->
@@ -150,10 +161,10 @@ apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History) :-
                 % pokud existuje symbol nalevo
                 Left = [NewHead|NewLeft] ->
                     % posuneme se doleva na pasce a posuneme hlavu na prvni prvek vpravo
-                    simulate(NewLeft, [NewHead, Head|Tail], NewState, History)
+                    simulate(NewLeft, [NewHead, Head|Tail], NewState, History, Configs)
                 ;
                     % pokud uz vlevo nic nebylo, pod hlavou bude mezera
-                    simulate([], [' ', Head|Tail], NewState, History)
+                    simulate([], [' ', Head|Tail], NewState, History, Configs)
             )
         ;
             (
@@ -162,14 +173,14 @@ apply_rule(Left, Tail, _, Head, rule(_, _, NewState, Action), History) :-
                     (
                         % jetslize vpravo mame symbol, posuneme se na nej
                         Tail \= [] ->
-                            simulate([Head|Left], Tail, NewState, History)
+                            simulate([Head|Left], Tail, NewState, History, Configs)
                         ;
                             % pokud vpravo nic neni, pridame mezeru
-                            simulate([Head|Left], [' '], NewState, History)
+                            simulate([Head|Left], [' '], NewState, History, Configs)
                     )
                 ;
                     % zapis/prepis symbolu
                     % symbol pod hlavou se prepise na akci
-                    simulate(Left, [Action|Tail], NewState, History)
+                    simulate(Left, [Action|Tail], NewState, History, Configs)
             )
     ).
