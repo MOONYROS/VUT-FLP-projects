@@ -55,6 +55,13 @@ start :-
 process_file(AllLines) :-
     append(RuleLines, [Tape], AllLines),
     maplist(process_rule, RuleLines),
+    
+    % odstraneni duplicitnich pravidel
+    findall(rule(A, B, C, D), rule(A, B, C, D), AllRules),
+    retractall(rule(_, _, _, _)),
+    sort(AllRules, UniqueRules),
+    maplist(assert, UniqueRules),
+    
     process_tape(Tape).
 
 % zpracuje radek pravidla na ctverici rule (viz vyse)
