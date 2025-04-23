@@ -23,32 +23,18 @@ read_lines(Ls) :-
 	  read_lines(LLs), Ls = [L|LLs]
 	).
 
-/** rozdeli radek na podseznamy */
-split_line([],[[]]) :- !.
-split_line([' '|T], [[]|S1]) :- !, split_line(T,S1).
-split_line([32|T], [[]|S1]) :- !, split_line(T,S1).    % aby to fungovalo i s retezcem na miste seznamu
-split_line([H|T], [[H|G]|S1]) :- split_line(T,[G|S1]). % G je prvni seznam ze seznamu seznamu G|S1
-
-/** vstupem je seznam radku (kazdy radek je seznam znaku) */
-split_lines([],[]).
-split_lines([L|Ls],[H|T]) :- split_lines(Ls,T), split_line(L,H).
-
 % ========= START PROGRAMU =========
 
 start :-
     prompt(_, ''),
     read_lines(LL),
-    split_lines(LL, S),
-    process_file(S),
+    process_file(LL),
     halt.
 
 % ========= ZPRACOVANI VSTUPU =========
 
 % pravidlo ma 4 parametry: aktualni stav, symbol pod hlavou, novy stav, akce
 :- dynamic rule/4.
-
-% spustime program (odkomentovat, pokud nechceme prekladat pres 'make')
-% :- initialization(start).
 
 % vezmeme si vstup a rozdelime jej na
 % pravidla (vsechny radky krome posledniho) a pasku (posledni radek)
@@ -66,34 +52,20 @@ process_file(AllLines) :-
 
 % zpracuje radek pravidla na ctverici rule (viz vyse)
 process_rule(Rule) :-
-    Rule = [PrevState, ReadSymbol, NextState, Action],
-
-    % prevede si seznamy na atomy
-    atom_chars(PrevAtom, PrevState),
-    atom_chars(ReadAtom, ReadSymbol),
-    atom_chars(NextAtom, NextState),
-    atom_chars(ActionAtom, Action),
-
-    % tyto atomy se pak rozextrahuji
-    sub_atom(PrevAtom, 0, 1, _, PrevStateChar),
-    sub_atom(ReadAtom, 0, 1, _, ReadSymbolChar),
-    sub_atom(NextAtom, 0, 1, _, NextStateChar),
-
-    % ale action muze byt L, R nebo prepsani => musime udelat sloziteji
-    (
-        ActionAtom = 'L' -> ActionChar = 'L';
-        ActionAtom = 'R' -> ActionChar = 'R';
-        sub_atom(ActionAtom, 0, 1, _, ActionChar)
-    ),
-
-    assertz(rule(PrevStateChar, ReadSymbolChar, NextStateChar, ActionChar)).
+    % vezmeme znaky na pozicich 0, 2, 4, 6 - ocekavame spravny format pravidla
+    nth0(0, Rule, CurrentState),
+    nth0(2, Rule, CurrentSymbol),
+    nth0(4, Rule, NewState),
+    nth0(6, Rule, Action),
+    
+    % pridame pravidlo do databaze
+    assertz(rule(CurrentState, CurrentSymbol, NewState, Action)).
 
 % zpracuje pasku a spusti simulaci NTS
-process_tape([Tape|_]) :-
-    flatten(Tape, FlatTape),
+process_tape(Tape) :-
     ( 
         % nalevo je prazdno, napravo paska, pocatecni stav je S
-        simulate([], FlatTape, 'S', [], [], Path) ->
+        simulate([], Tape, 'S', [], [], Path) ->
             print_path(Path) % pokud existuje cesta, vypiseme
         ;
             halt(1) % jinak koncime s chybou
@@ -143,7 +115,7 @@ create_configuration(Left, Right, State, Configuration) :-
         ;
             append(RevLeft, [State], ConfigList) % ... jinak bude na konci stav
     ),
-    atomic_list_concat(ConfigList, '', Configuration).
+    atom_chars(Configuration, ConfigList).
 
 % funkce pro ziskani pravidla, ktere vede do koncoveho stavu 'F'
 get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
