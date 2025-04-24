@@ -1,0 +1,4 @@
+S a Q  
+S b F c
+Q   S R
+aaab

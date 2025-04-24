@@ -1,0 +1,10 @@
+S aaacaa
+ Saaacaa
+ Baaacaa
+ Bbaacaa
+ bBaacaa
+ bBbacaa
+ bbBacaa
+ bbBbcaa
+ bbbBcaa
+ bbbFcaa
