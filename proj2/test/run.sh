@@ -1,6 +1,6 @@
 #!/bin/bash
 TMPFILE="./tmp_output"
-N_TESTS=8
+N_TESTS=10
 PASS=0
 
 for i in $(seq 1 $N_TESTS); do
@@ -13,7 +13,7 @@ for i in $(seq 1 $N_TESTS); do
     else
         echo "Test $i failed"
         echo "Expected:"
-        cat "expected$i.txt"
+        cat "exp$i.txt"
         echo "Got:"
         cat "$TMPFILE"
     fi

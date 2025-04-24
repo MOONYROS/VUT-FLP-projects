@@ -1,0 +1,6 @@
+S a A R
+A b B R
+B c C L
+C b D L
+D a F a
+abc
