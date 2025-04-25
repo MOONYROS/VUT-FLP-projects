@@ -1,6 +1,6 @@
 #!/bin/bash
 TMPFILE="./tmp_output"
-N_TESTS=13
+N_TESTS=15
 PASS=0
 
 for i in $(seq 1 $N_TESTS); do

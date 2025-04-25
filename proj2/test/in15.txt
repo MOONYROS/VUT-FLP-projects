@@ -1,0 +1,4 @@
+S a A R
+A a B R
+B a C R
+ab
