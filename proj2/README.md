@@ -91,6 +91,15 @@ Skript porovnává očekávané výstupy (v adresáři `expected/`) s aktuální
 Skript zobrazuje přehledný průběh testů a jejich výsledky.
 Na konci svého běhu zobrazí celkovou úspěšnost.
 
+### Poznámka
+
+Testovací skript byl spouštěn na systémech:
+
+- macOS Sequoia 15.4.1 (Apple M1 Pro)
+- server Merlin
+
+Na obou systémech podal každý test výsledek prakticky okamžitě po spuštění.
+
 ## Omezení
 
 1. Program **očekává na vstupu přesný formát**, jako je popsáno v zadání projektu, případně v sekci **formát vstupu**.
