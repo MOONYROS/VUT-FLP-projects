@@ -1,0 +1,14 @@
+S a A a
+A a A z
+A z B R
+B h B d
+B d C R
+C o C a
+C a D R
+D j D r
+D r E R
+E d E e
+E e G R
+G a G c
+G c F R
+ahojda
