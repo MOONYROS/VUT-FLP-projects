@@ -11,16 +11,16 @@ TMPFILE="./tmp_output"
 N_TESTS=20
 PASS=0
 
-echo -e "${BOLD}${BLUE}======================================${NC}"
-echo -e "${BOLD}${BLUE}         TURING MACHINE TESTS         ${NC}"
-echo -e "${BOLD}${BLUE}======================================${NC}"
+echo -e "${BOLD}${BLUE}============================${NC}"
+echo -e "${BOLD}${BLUE}    TURING MACHINE TESTS    ${NC}"
+echo -e "${BOLD}${BLUE}============================${NC}"
 echo ""
 
 for i in $(seq 1 $N_TESTS); do
     printf "${BOLD}Test %2d:${NC} " $i
-    ../flp24-log < "in$i.txt" > "$TMPFILE" 2>/dev/null
+    ../flp24-log < "inputs/in$i.txt" > "$TMPFILE" 2>/dev/null
     
-    if diff -q "exp$i.txt" "$TMPFILE" > /dev/null; then
+    if diff -q "expected/exp$i.txt" "$TMPFILE" > /dev/null; then
         echo -e "${GREEN}[PASS]${NC}"
         PASS=$((PASS + 1))
     else
@@ -41,7 +41,7 @@ rm -f "$TMPFILE"
 FAIL=$((N_TESTS - PASS))
 PERCENTAGE=$((PASS * 100 / N_TESTS))
 
-echo -e "${BLUE}======================================${NC}"
+echo -e "${BLUE}============================${NC}"
 echo -e "${BOLD}SUMMARY:${NC}"
 echo -e "  ${GREEN}PASS:${NC} $PASS/$N_TESTS (${PERCENTAGE}%)"
 if [ $FAIL -gt 0 ]; then
@@ -49,4 +49,4 @@ if [ $FAIL -gt 0 ]; then
 else
     echo -e "  ${GREEN}FAIL:${NC} $FAIL/$N_TESTS"
 fi
-echo -e "${BLUE}======================================${NC}"
+echo -e "${BLUE}============================${NC}"
