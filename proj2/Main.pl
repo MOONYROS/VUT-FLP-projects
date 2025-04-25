@@ -151,8 +151,8 @@ apply_rule(Left, [Head|Tail], State, History, PrevConfigs, Path) :-
                     % posuneme se doleva na pasce
                     simulate(NewLeft, [NewHead, Head|Tail], NewState, History, PrevConfigs, Path)
                 ;
-                    % pokud vlevo nic neni, pod hlavou bude mezera
-                    simulate([], [' ', Head|Tail], NewState, History, PrevConfigs, Path)
+                    % pokud vlevo nic neni, koncime s chybou - nelze jit pred zacatek pasky
+                    fail
             )
         ;
             (
