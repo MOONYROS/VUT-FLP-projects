@@ -1,0 +1,8 @@
+Sa     b
+aA     b
+a A    b
+a  A   b
+a   A  b
+a    A b
+a     Ab
+a     Ff
