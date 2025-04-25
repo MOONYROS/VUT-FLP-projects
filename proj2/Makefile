@@ -1,5 +1,5 @@
 TARGET=flp24-log
-SOURCE=main.pl
+SOURCE=Main.pl
 ZIP=flp-log-xlukas15.zip
 
 .PHONY: all pack test clean
