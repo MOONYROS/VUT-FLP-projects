@@ -11,7 +11,7 @@ pack:
 	zip -r $(ZIP) Makefile $(SOURCE) README.md test/
 
 test:
-	cd test && ./run.sh
+	cd test && ./test.sh
 
 clean:
 	rm -f $(TARGET) $(ZIP)
