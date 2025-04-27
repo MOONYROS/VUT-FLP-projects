@@ -73,39 +73,6 @@ process_tape(Tape) :-
 
 % ========= SIMULACE NTS =========
 
-% simulace nedeterministickeho Turingova stroje
-% pokud jsme ve stavu F, vratime cestu az do konce
-simulate(Left, Right, 'F', _, PrevConfigs, Path) :-
-    create_configuration(Left, Right, 'F', FinalConfig),
-    reverse([FinalConfig|PrevConfigs], Path),
-    !.
-% pokud nejsme v koncovem stavu, pokracujeme
-simulate(Left, Right, State, History, PrevConfigs, Path) :-
-    create_configuration(Left, Right, State, Config),
-    
-    \+ member((Left, Right, State), History), % kontrola cykleni
-    
-    NewHistory = [(Left, Right, State)|History], % pridame stav do historie
-    NewPrevConfigs = [Config|PrevConfigs], % pridame konfiguraci
-    
-    % kontrola symbolu pod hlavou
-    (
-        Right = [] ->
-            CurrentSymbol = ' '
-        ; 
-            Right = [CurrentSymbol|_]
-    ),
-
-    % najdeme vsechna pravidla pro aktualni stav
-    findall(rule(State, CurrentSymbol, NewState, Action), rule(State, CurrentSymbol, NewState, Action), Rules),
-    
-    (
-        Rules = [] -> 
-            fail % pokud neexistuje zadne pravidlo, selhani
-        ;
-            apply_rule(Left, Right, State, NewHistory, NewPrevConfigs, Path) % jinak je pouzijeme
-    ).
-
 % vytvoreni konfiguarace z pasky vlevo, vpravo a stavu
 create_configuration(Left, Right, State, Configuration) :-
     reverse(Left, RevLeft), % nejdriv si otocim pasku
@@ -117,60 +84,89 @@ create_configuration(Left, Right, State, Configuration) :-
     ),
     atom_chars(Configuration, ConfigList).
 
-% funkce pro ziskani pravidla, ktere vede do koncoveho stavu 'F'
-get_finishing_rule(Rules, rule(State, Symbol, 'F', Action)) :-
-    member(rule(State, Symbol, 'F', Action), Rules).
 
-% aplikace pravidel NTS
-% na konci pasky pridame mezeru
-apply_rule(Left, [], State, History, PrevConfigs, Path) :-
-    apply_rule(Left, [' '], State, History, PrevConfigs, Path).
-% najdeme vsechna aplikovatelna pravidla a aplikujeme je
-apply_rule(Left, [Head|Tail], State, History, PrevConfigs, Path) :-
-    findall(rule(State, Head, NewState, Action), rule(State, Head, NewState, Action), Rules),
+% simulace nedeterministickeho Turingova stroje
+% pokud jsme ve stavu F, vratime cestu az do konce
+simulate(Left, Right, 'F', _, PrevConfigs, Path) :-
+    create_configuration(Left, Right, 'F', FinalConfig),
+    reverse([FinalConfig|PrevConfigs], Path),
+    !.
+% pokud nejsme v koncovem stavu, pokracujeme
+simulate(Left, Right, State, History, PrevConfigs, Path) :-
+    % kontrola cykleni
+    \+ member((Left, Right, State), History),
     
-    Rules \= [], % pokud jsme nejaka pravidla nasli
+    % vytvoreni konfigurace a aktializace historie
+    create_configuration(Left, Right, State, Config),
+    NewHistory = [(Left, Right, State)|History],
+    NewPrevConfigs = [Config|PrevConfigs],
     
-    % zkusime najit pravidlo vedouci do 'F'
+    % ziskani aktuálního symbolu a pravidel
+    get_current_symbol(Right, CurrentSymbol),
+    findall(rule(State, CurrentSymbol, NewState, Action), 
+            rule(State, CurrentSymbol, NewState, Action), 
+            Rules),
+    
+    % kontrola existence pravidel
+    Rules \= [],
+    
+    % vyber pravidla a aplikace akce
     (
-        get_finishing_rule(Rules, FinishingRule) ->
-            Rule = FinishingRule  % pokud existuje, pouzijeme ho
+        get_finishing_rule(Rules, Rule) ->
+            % pokud existuje pravidlo vedouci do F, pouzijeme ho
+            apply_rule(Left, Right, Rule, NewHistory, NewPrevConfigs, Path)
         ;
-            member(Rule, Rules)  % jinak vezmeme libovolne pravidlo
-    ),
-    
-    Rule = rule(_, _, NewState, Action), % a aplikujeme ho
-    
-    % podle akce zvolime operaci
-    (
-        % posun doleva
-        Action = 'L' ->
-            (
-                % pokud existuje symbol nalevo
-                Left = [NewHead|NewLeft] ->
-                    % posuneme se doleva na pasce
-                    simulate(NewLeft, [NewHead, Head|Tail], NewState, History, PrevConfigs, Path)
-                ;
-                    % pokud vlevo nic neni, koncime s chybou - nelze jit pred zacatek pasky
-                    fail
-            )
-        ;
-            (
-                % posun doprava
-                Action = 'R' ->
-                    (
-                        % jestlize vpravo mame symbol, posuneme se na nej
-                        Tail \= [] ->
-                            simulate([Head|Left], Tail, NewState, History, PrevConfigs, Path)
-                        ;
-                            % pokud vpravo nic není, pridame mezeru
-                            simulate([Head|Left], [' '], NewState, History, PrevConfigs, Path)
-                    )
-                ;
-                    % zapis/prepis symbolu
-                    simulate(Left, [Action|Tail], NewState, History, PrevConfigs, Path)
-            )
+            % jinak pouzijeme libovolne pravidlo
+            member(Rule, Rules),
+            apply_rule(Left, Right, Rule, NewHistory, NewPrevConfigs, Path)
     ).
+
+% ziskani pravidla vedoucího do F
+get_finishing_rule(Rules, Rule) :-
+    member(Rule, Rules),
+    Rule = rule(_, _, 'F', _).
+
+% ziskani aktuálního symbolu pod hlavou
+get_current_symbol([], ' ').
+get_current_symbol([Head|_], Head).
+
+% aplikace vybraného pravidla
+apply_rule(Left, Right, rule(_, _, NewState, Action), History, PrevConfigs, Path) :-
+    (
+        Action = 'L' -> % posun doleva
+        (
+            Left = [_|_] -> 
+                apply_left_move(Left, Right, NewState, History, PrevConfigs, Path)
+            ;
+                fail % nelze jit pred zacatek pasky
+        )
+        ;
+        Action = 'R' -> % posun doprava nebo zapis symbolu
+            apply_right_move(Left, Right, NewState, History, PrevConfigs, Path)
+        ;
+            apply_symbol_write(Left, Right, Action, NewState, History, PrevConfigs, Path)
+    ).
+
+% aplikace pohybu doleva
+apply_left_move(Left, Right, NewState, History, PrevConfigs, Path) :-
+    Left = [NewHead|NewLeft],
+    Right = [Head|Tail],
+    simulate(NewLeft, [NewHead, Head|Tail], NewState, History, PrevConfigs, Path).
+
+% aplikace pohybu doprava
+apply_right_move(Left, Right, NewState, History, PrevConfigs, Path) :-
+    Right = [Head|Tail],
+    (
+        Tail \= [] ->
+            simulate([Head|Left], Tail, NewState, History, PrevConfigs, Path)
+        ;
+            simulate([Head|Left], [' '], NewState, History, PrevConfigs, Path)
+    ).
+
+% aplikace zapisu symbolu
+apply_symbol_write(Left, Right, Symbol, NewState, History, PrevConfigs, Path) :-
+    Right = [_|Tail],
+    simulate(Left, [Symbol|Tail], NewState, History, PrevConfigs, Path).
 
 % ========= VYPIS CESTY =========
 
