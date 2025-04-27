@@ -101,7 +101,7 @@ simulate(Left, Right, State, History, PrevConfigs, Path) :-
     NewHistory = [(Left, Right, State)|History],
     NewPrevConfigs = [Config|PrevConfigs],
     
-    % ziskani aktuálního symbolu a pravidel
+    % ziskani aktualniho symbolu a pravidel
     get_current_symbol(Right, CurrentSymbol),
     findall(rule(State, CurrentSymbol, NewState, Action), 
             rule(State, CurrentSymbol, NewState, Action), 
@@ -121,16 +121,16 @@ simulate(Left, Right, State, History, PrevConfigs, Path) :-
             apply_rule(Left, Right, Rule, NewHistory, NewPrevConfigs, Path)
     ).
 
-% ziskani pravidla vedoucího do F
+% ziskani pravidla vedouciho do F
 get_finishing_rule(Rules, Rule) :-
     member(Rule, Rules),
     Rule = rule(_, _, 'F', _).
 
-% ziskani aktuálního symbolu pod hlavou
+% ziskani aktualniho symbolu pod hlavou
 get_current_symbol([], ' ').
 get_current_symbol([Head|_], Head).
 
-% aplikace vybraného pravidla
+% aplikace vybraneho pravidla
 apply_rule(Left, Right, rule(_, _, NewState, Action), History, PrevConfigs, Path) :-
     (
         Action = 'L' -> % posun doleva
